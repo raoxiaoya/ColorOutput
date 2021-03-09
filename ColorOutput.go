@@ -1,3 +1,8 @@
+/*
+-- @Time : 2021/3/8 15:30
+-- @Author : raoxiaoya
+-- @Desc :
+*/
 package ColorOutput
 
 import (
@@ -72,15 +77,51 @@ const (
 	ModeHidden    = 7
 )
 
+/*
+
+windows cmd下查看颜色编号： color /?
+
+Sets the default console foreground and background colors.
+
+COLOR [attr]
+
+  attr        Specifies color attribute of console output
+
+Color attributes are specified by TWO hex digits -- the first
+corresponds to the background; the second the foreground.  Each digit
+can be any of the following values:
+
+    0 = Black       8 = Gray
+    1 = Blue        9 = Light Blue
+    2 = Green       A = Light Green
+    3 = Aqua        B = Light Aqua
+    4 = Red         C = Light Red
+    5 = Purple      D = Light Purple
+    6 = Yellow      E = Light Yellow
+    7 = White       F = Bright White
+
+If no argument is given, this command restores the color to what it was
+when CMD.EXE started.  This value either comes from the current console
+window, the /T command line switch or from the DefaultColor registry
+value.
+
+The COLOR command sets ERRORLEVEL to 1 if an attempt is made to execute
+the COLOR command with a foreground and background color that are the
+same.
+
+Example: "COLOR fc" produces light red on bright white
+
+*/
+
 const (
-	CmdBlack = 0
-	CmdRed = 4
-	CmdGreen = 2
+	CmdBlack  = 0
+	CmdRed    = 4
+	CmdGreen  = 2
 	CmdYellow = 6
-	CmdBlue = 1
+	CmdBlue   = 1
 	CmdPurple = 5
-	CmdCyan = 3
-	CmdWhite = 7
+	CmdCyan   = 3
+	CmdWhite  = 7
 )
 
 var modeArr = []int{0, 1, 4, 5, 6, 7}
@@ -94,33 +135,12 @@ type ColorOutput struct {
 var Colorful ColorOutput
 var frontMap map[string]int
 var backMap map[string]int
+var CmdPrint func(s interface{}, i int)
 
 func init() {
-	if runtime.GOOS == "windows" {
-		Colorful = ColorOutput{frontColor: CmdGreen, backColor: CmdBlack, mode: ModeDefault}
+	Colorful = ColorOutput{frontColor: CmdGreen, backColor: CmdBlack, mode: ModeDefault}
 
-		frontMap = make(map[string]int)
-		frontMap["black"] = CmdBlack
-		frontMap["red"] = CmdRed
-		frontMap["green"] = CmdGreen
-		frontMap["yellow"] = CmdYellow
-		frontMap["blue"] = CmdBlue
-		frontMap["purple"] = CmdPurple
-		frontMap["cyan"] = CmdCyan
-		frontMap["white"] = CmdWhite
-
-		backMap = make(map[string]int)
-		backMap["black"] = CmdBlack
-		backMap["red"] = CmdRed
-		backMap["green"] = CmdGreen
-		backMap["yellow"] = CmdYellow
-		backMap["blue"] = CmdBlue
-		backMap["purple"] = CmdPurple
-		backMap["cyan"] = CmdCyan
-		backMap["white"] = CmdWhite
-	} else {
-		Colorful = ColorOutput{frontColor: FrontGreen, backColor: BackBlack, mode: ModeDefault}
-
+	if runtime.GOOS != "windows" {
 		frontMap = make(map[string]int)
 		frontMap["black"] = FrontBlack
 		frontMap["red"] = FrontRed
@@ -140,29 +160,41 @@ func init() {
 		backMap["purple"] = BackPurple
 		backMap["cyan"] = BackCyan
 		backMap["white"] = BackWhite
-	}
+	} else {
+		frontMap = make(map[string]int)
+		frontMap["black"] = CmdBlack
+		frontMap["red"] = CmdRed
+		frontMap["green"] = CmdGreen
+		frontMap["yellow"] = CmdYellow
+		frontMap["blue"] = CmdBlue
+		frontMap["purple"] = CmdPurple
+		frontMap["cyan"] = CmdCyan
+		frontMap["white"] = CmdWhite
 
+		backMap = make(map[string]int)
+		backMap["black"] = CmdBlack
+		backMap["red"] = CmdRed
+		backMap["green"] = CmdGreen
+		backMap["yellow"] = CmdYellow
+		backMap["blue"] = CmdBlue
+		backMap["purple"] = CmdPurple
+		backMap["cyan"] = CmdCyan
+		backMap["white"] = CmdWhite
+	}
 }
 
 // 其中0x1B是标记，[开始定义颜色，依次为：模式，背景色，前景色，0代表恢复默认颜色。
 func (c ColorOutput) Println(str interface{}) {
-	if runtime.GOOS == "windows" {
-		//CmdPrint(str, c.frontColor)
-		fmt.Println(str)
-	} else {
+	if runtime.GOOS != "windows" {
 		fmt.Println(fmt.Sprintf("%c[%d;%d;%dm%s%c[0m", 0x1B, c.mode, c.backColor, c.frontColor, str, 0x1B))
+		return
+	} else {
+		// 背景色 | 前景色
+		// 注意，简单的或操作是错误的，比如 4 | 2，实际是 6 即 黄色，和预期的红底绿字不一致。
+		// 应该构成1个8位的二进制，前四位是背景色，后四位是前景色，因此背景色需要左移4位。
+		CmdPrint(str, (c.backColor<<4)|c.frontColor)
 	}
 }
-
-//func CmdPrint(s interface{}, i int) { //设置终端字体颜色
-//	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-//	proc := kernel32.NewProc("SetConsoleTextAttribute")
-//	handle, _, _ := proc.Call(uintptr(syscall.Stdout), uintptr(i))
-//	fmt.Print(s)
-//	handle, _, _ = proc.Call(uintptr(syscall.Stdout), uintptr(7))
-//	CloseHandle := kernel32.NewProc("CloseHandle")
-//	CloseHandle.Call(handle)
-//}
 
 func (c ColorOutput) WithFrontColor(color string) ColorOutput {
 	color = strings.ToLower(color)

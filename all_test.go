@@ -1,20 +1,15 @@
 /*
--- @Time : 2021/3/7 17:17
+-- @Time : 2021/3/8 15:31
 -- @Author : raoxiaoya
 -- @Desc :
 */
 package ColorOutput
 
 import (
-	"fmt"
-	"runtime"
 	"testing"
 )
 
-func TestPrint(t *testing.T) {
-	Colorful.WithFrontColor("green").Println("hhhh")
-}
-
-func TestOs(t *testing.T) {
-	fmt.Println(runtime.GOOS)
+func TestColorOutput(t *testing.T) {
+	Colorful.WithFrontColor("green").WithBackColor("red").Println("ColorOutput test...")
+	Colorful.WithFrontColor("blue").WithBackColor("red").Println("ColorOutput test...")
 }
