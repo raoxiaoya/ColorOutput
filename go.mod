@@ -1,4 +1,4 @@
-module ColorOutput
+module github.com/phprao/ColorOutput
 
 go 1.14
 
